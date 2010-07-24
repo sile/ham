@@ -15,6 +15,8 @@ end
 
 ModelIndexPath = ARGV[0]
 TestDataDir    = ARGV[1]
+HamDir = (TestDataDir+'/ham').sub('//','/')
+SpamDir = (TestDataDir+'/spam').sub('//','/')
 
 ##
 unless FileTest.directory?(TestDataDir)
@@ -22,13 +24,13 @@ unless FileTest.directory?(TestDataDir)
   exit 1
 end
 
-unless FileTest.directory?(TestDataDir+'/ham')
-  STDERR.puts "No such directory: #{TestDataDir}/ham"
+unless FileTest.directory?(HamDir)
+  STDERR.puts "No such directory: #{HamDir}"
   exit 1
 end
 
-unless FileTest.directory?(TestDataDir+'/spam')
-  STDERR.puts "No such directory: #{TestDataDir}/spam"
+unless FileTest.directory?(SpamDir)
+  STDERR.puts "No such directory: #{SpamDir}"
   exit 1
 end
 
@@ -53,19 +55,28 @@ rescue => ex
   exit 1
 end
 
+## 
+count[:ham] = Dir.glob("#{HamDir}/*").size.to_f
+count[:spam] = Dir.glob("#{SpamDir}/*").size.to_f
+cnt = 0
+total = count[:ham].to_i+count[:spam].to_i
+
 ## HAM
-count[:ham] = Dir.glob("#{TestDataDir}/ham/*").size.to_f
-Dir.glob("#{TestDataDir}/ham/*").each do |path|
+Dir.glob("#{HamDir}/*").each do |path|
+  STDERR.write "# #{cnt+=1}/#{total}\r"
   ham[:correct] += 1.0 if ham?(path)
 end
 
 ## SPAM
-count[:spam] = Dir.glob("#{TestDataDir}/spam/*").size.to_f
-Dir.glob("#{TestDataDir}/spam/*").each do |path|
+Dir.glob("#{SpamDir}/*").each do |path|
+  STDERR.write "# #{cnt+=1}/#{total}\r"
   ham[:wrong] += 1.0 if ham?(path)
 end
 
-puts "GUESSED_HAM/HAM : #{ham[:correct].to_i}/#{count[:ham].to_i}"
-puts "GUESSED_HAM/SPAM: #{ham[:wrong].to_i}/#{count[:spam].to_i}"
+puts "                           "
+puts "#{ham[:correct].to_i} files guessed to be HAM in '#{HamDir}' (total #{count[:ham].to_i} files)"
+puts "#{(count[:spam]-ham[:wrong]).to_i} files guessed to be SPAM in '#{SpamDir}' (total #{count[:spam].to_i} files)"
+puts ""
 puts "precision: %s" % [(ham[:correct]/count[:ham]) / (ham[:correct]/count[:ham]+ham[:wrong]/count[:spam])]
 puts "recall   : %s" % [ham[:correct]/count[:ham]]
+puts ""
