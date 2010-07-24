@@ -6,12 +6,15 @@
 #include <tr1/unordered_set>
 #include "trie/searcher.hh"
 
-typedef std::vector<double> probabilities;
+#include <sys/types.h>
+#include <dirent.h>
+#include <fstream>
+
 typedef std::tr1::unordered_set<int> NodeIdSet;
 
 struct Features {
   Features()
-    : score(0.0) {}
+    : ham_acc_prob(0.0), spam_acc_prob(0.0) {}
   
   void operator()(const char* key, unsigned len, int node_id, double spam_probability) {
     if(used.find(node_id) != used.end())
@@ -69,11 +72,40 @@ struct Features {
   NodeIdSet used;
   double ham_acc_prob;
   double spam_acc_prob;
-  double score;
 };
 
+unsigned test_files(const HAM::Trie::Searcher& srch, const std::string& dir, unsigned& file_count) {
+  DIR *dp = opendir(dir.c_str());
+  file_count = 0;
+  if(!dp)
+    return 0;
+  
+  unsigned h=0;
+  for(dirent* dirp=readdir(dp); dirp; dirp=readdir(dp))
+    if(dirp->d_name[0] != '.') {
+      file_count++;
+      std::string path = dir+"/"+dirp->d_name;
+      
+      std::ifstream in(path.c_str());
+      Features fs;
+      std::string line;
+      while(std::getline(in, line)) {
+	const char* s = line.c_str();
+	for(; *s != '\0'; s++)
+	  srch.each_common_prefix(s, fs);
+      }
+      
+      double score = fs.calc();
+      if(score < 0.5)
+	h++;
+    }
+  closedir(dp);  
+  return h;
+}
+
+
 int main(int argc, char** argv) {
-  if(argc != 2) {
+  if(argc != 3) {
     std::cerr << "Usage: ham [--min-spam-score=0.5] <model-index>" << std::endl;
     return 2;
   }
@@ -84,16 +116,16 @@ int main(int argc, char** argv) {
     return 2;
   }
   
-  Features fs;
-  std::string line;
-  while(std::getline(std::cin, line)) {
-    const char* s = line.c_str();
-    for(; *s != '\0'; s++)
-      srch.each_common_prefix(s, fs);
-  }
+  std::string root=argv[2];
+  unsigned ham_count=0;
+  unsigned h1 = test_files(srch, root+"/ham", ham_count);
 
-  double score = fs.calc();
-  printf("%05f\n", score);
-
-  return score < 0.5 ? 0 : 1;
+  unsigned spam_count=0;
+  unsigned h2 = test_files(srch, root+"/spam", spam_count);
+  std::cout << h1 << ',' << ham_count << ',' << h2 << ',' << spam_count << std::endl;
+  std::cout << "precision: " << (double)(h1)/(h1+h2) << std::endl;
+  std::cout << "recall:    " << (double)(h1)/ham_count << std::endl;
+  return 0;
 }
+
+// shell?

@@ -1,0 +1,71 @@
+#! /usr/bin/env ruby
+
+if ARGV.size != 2 && ARGV.size != 3
+  STDERR.puts "Usage: hamp [--min-spam-score=0.5] <model-index> <test-data-dir>"
+  exit 1
+end
+
+##
+if ARGV[0] =~ /^--min-spam-score=/
+  MinSpamScore = ARGV[0].sub(/^--min-spam-score=/,'').to_f
+  ARGV.shift
+else 
+  MinSpamScore = 0.5
+end
+
+ModelIndexPath = ARGV[0]
+TestDataDir    = ARGV[1]
+
+##
+unless FileTest.directory?(TestDataDir)
+  STDERR.puts "No such directory: #{TestDataDir}"
+  exit 1
+end
+
+unless FileTest.directory?(TestDataDir+'/ham')
+  STDERR.puts "No such directory: #{TestDataDir}/ham"
+  exit 1
+end
+
+unless FileTest.directory?(TestDataDir+'/spam')
+  STDERR.puts "No such directory: #{TestDataDir}/spam"
+  exit 1
+end
+
+##
+count = {:ham => 0.0, :spam => 0.0}
+ham   = {:correct => 0.0, :wrong => 0.0}
+
+def ham?(path)
+  IO.popen("#{File.dirname __FILE__}/ham --min-spam-score=#{MinSpamScore} #{ModelIndexPath}", "r+"){|io|
+    open(path){|f| io.write(f.read) }
+    io.close_write
+
+    ret = io.gets
+    if ret.empty?
+      STDERR.puts "Can't open file: #{ModelIndexPath}"
+      exit 1
+    end
+    return !!(ret=~/HAM/)
+  }
+rescue => ex
+  STDERR.puts ex.message
+  exit 1
+end
+
+## HAM
+count[:ham] = Dir.glob("#{TestDataDir}/ham/*").size.to_f
+Dir.glob("#{TestDataDir}/ham/*").each do |path|
+  ham[:correct] += 1.0 if ham?(path)
+end
+
+## SPAM
+count[:spam] = Dir.glob("#{TestDataDir}/spam/*").size.to_f
+Dir.glob("#{TestDataDir}/spam/*").each do |path|
+  ham[:wrong] += 1.0 if ham?(path)
+end
+
+puts "GUESSED_HAM/HAM : #{ham[:correct].to_i}/#{count[:ham].to_i}"
+puts "GUESSED_HAM/SPAM: #{ham[:wrong].to_i}/#{count[:spam].to_i}"
+puts "precision: %s" % [(ham[:correct]/count[:ham]) / (ham[:correct]/count[:ham]+ham[:wrong]/count[:spam])]
+puts "recall   : %s" % [ham[:correct]/count[:ham]]
