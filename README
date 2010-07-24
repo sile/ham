@@ -12,13 +12,13 @@
 - 0.0.1
 
 
-【ビルド】
-$make
+【ビルド方法】
+$ make
 
 
 【ビルド確認環境】
-- gcc-4.2.4
-- linuc(POSIX)
+- gcc-4.2.4     ※ 依存: std::tr1::unordered_set, std::tr1::unordered_map
+- linuc(POSIX)  ※ 依存: mmap
 
 
 【コマンド】
