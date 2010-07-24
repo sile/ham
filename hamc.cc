@@ -45,7 +45,7 @@ int main(int argc, char** argv) {
     total_ham_count  = parse_hex(line.c_str());
     total_spam_count = parse_hex(line.c_str()+9);
   }
-  std::cerr << "  == HAM count : " << total_ham_count 
+  std::cerr << "  == HAM count : " << total_ham_count << std::endl 
 	    << "  == SPAM count: " << total_spam_count << std::endl;
 
   // rest lines
