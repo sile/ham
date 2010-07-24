@@ -1,0 +1,133 @@
+【名前】
+- ham
+
+
+【概要】
+- ベイジアンフィルタを用いた二値分類器のC++実装
+- 素性にはNグラムを利用
+- 文字コードはUTF-8にのみ対応
+
+
+【バージョン】
+- 0.0.1
+
+
+【ビルド】
+$make
+
+
+【ビルド確認環境】
+- gcc-4.2.4
+- linuc(POSIX)
+
+
+【コマンド】
+== bin/hamt:
+    - 学習コマンド
+    - 学習結果をテキスト形式で出力する
+    - フォーマット:
+      -- 一行目(データ数)　: <hamファイル数> <spamファイル数> ==TOTAL==
+      -- 残りの行(素性定義): <素性のhamファイルでの出現数> <素性のspamファイルでの出現数> <素性文字列>
+$ bin/hamt <learn-dir> <ngram-min> <ngram-max>
+learn-dir := 学習用ディレクトリ
+             このディレクトリは'ham'と'spam'という名前のディレクトリを有する必要がある
+               - ham : hamデータ(正解データ)ファイルが配置されているディレクトリ
+               - spam: spamデータ(不正解データ)ファイルが配置されているディレクトリ
+ngram-min := 素性として用いるNグラムの最小値  ※ N >= 1
+ngram-max := 素性として用いるNグラムの最大値  ※ N <= 32
+
+
+== bin/hamc:
+    - bin/hamtの出力結果を標準入力から読み込み、bin/ham用にコンパイルするコマンド
+$ bin/hamc [--lower-frequency-limit=2] <model-index>
+--lower-frequency-limit := 使用する素性のフィルタ値
+                           出現頻度が低い素性はノイズとして除去する
+                           デフォルトは2
+model-index := 生成されるコンパイル済みファイル
+
+
+== bin/ham:
+    - 分類コマンド
+    - 標準入力から対象テキストを読み込み、それをhamかspamかに分類する
+    - 標準出力に"#{分類スコア}\t#{HAM or SPAM}"を出力する
+    - コマンドの返り値は、テキストがhamなら0、spamなら1、エラーならそれ以外の値
+$ bin/ham [--min-spam-score=0.5] <model-index>
+--min-spam-score := spamとして分類されるスコアの下限
+                      この値を下げると、取りこぼしは多くなるが、hamに分類されるテキストの正解率は高くなる
+                    デフォルトは0.5
+model-index := bin/hamcが生成したファイル
+
+
+== bin/hamp:
+    - 分類結果検証用コマンド
+    - 実際にはRubyスクリプト
+$ bin/hamp [--min-spam-score=0.5] <model-index> <test-data-dir>
+--min-spam-score := spamとして分類されるスコアの下限
+                    デフォルトは0.5
+model-index   := bin/hamcが生成したファイル
+test-data-dir := テスト用のデータディレクトリ
+                 ディレクトリ構造は、hamtのlearn-dirと同じ
+
+
+【コマンド実行例】
+# 学習用データ
+$ ls learn_data
+ham spam  # ham以下に正しいデータを、spam以下にはスパムデータを配置しておく 
+
+# 学習
+$ bin/hamt learn_data 1 4 | bin/hamc model.idx
+
+# 分類
+$ bin/ham model.idx < "分類対象ファイル"
+
+# テスト
+$ bin/hamp model.idx test_data
+
+$ ls test_data
+ham spam
+
+
+【API】
+# TODO: ちゃんとした説明
+
+namespace HAM {
+  // ファイル: feature_extractor.hh
+  class FeatureExtract {
+  public:
+     // モデルファイルをロード
+     FeatureExtract(const char* model_index_path);
+
+     // ロードに成功したかどうか
+     operator bool(); 
+
+     // text内の素性を走査
+     // Callbackは、以下の引数を有する関数(関数オブジェクト)
+     //  - feature_name       : 素性名. const char*
+     //  - feature_name_length: 素性名の長さ. unsigned
+     //  - feature_id         : 各素性に一意なID. unsigned
+     //  - spam_probability   : 素性のスパムらしさ(0.0~1.0). double
+     template <class Callback>
+     void each_feature(const char* text, Callback& fn) const;
+  };
+
+  // ファイル: scorer.hh
+  class Scorer {
+  public:
+    Scorer(const FeatureExtractor& fe);
+
+    // 分類対象となるテキストを追加する
+    void add_text(const char* text);
+
+    // メソッド呼び出しまでに追加したテキスト群を対象として
+    // それがスパムテキストである確率(0.0~1.0)を計算する
+    double calc_score() const;
+  };
+}
+
+
+【参考】
+- ベイジアンフィルタ実装:
+  -- http://www.gigamonkeys.com/book/practical-a-spam-filter.html
+
+- Inverse Chi-Square関数実装:
+  -- http://garyrob.blogs.com/chi2p.py

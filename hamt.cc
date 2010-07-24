@@ -94,7 +94,7 @@ bool train_files(Train& tr, const std::string& dir, bool is_ham) {
 
 int main(int argc, char** argv) {
   if(argc != 4) {
-    std::cerr << "Usage: hamtr <learn-dir> <ngram-min> <ngram-max>" << std::endl;
+    std::cerr << "Usage: hamt <learn-dir> <ngram-min> <ngram-max>" << std::endl;
     return 1;
   }
 
