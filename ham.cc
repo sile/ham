@@ -17,7 +17,7 @@ int main(int argc, char** argv) {
 
   // parse argument
   double min_spam_score=0.5;
-  unsigned arg_i=1;
+  int arg_i=1;
   if(strncmp(argv[arg_i], OPT1, strlen(OPT1))==0)
     min_spam_score = atof(argv[arg_i++]+strlen(OPT1));
 

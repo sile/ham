@@ -20,7 +20,6 @@ struct Counter {
   unsigned spam_count;
   unsigned prev_doc_id;
 };
-
 typedef std::tr1::unordered_map<std::string, Counter> TokenCounter;
 
 class Train {
@@ -80,11 +79,12 @@ bool train_files(Train& tr, const std::string& dir, bool is_ham) {
   if(!dp)
     return false;
   
+  unsigned cnt=0;
   std::cerr << "= " << (is_ham?"HAM":"SPAM") << ": " << dir << std::endl;
   for(dirent* dirp=readdir(dp); dirp; dirp=readdir(dp))
     if(dirp->d_name[0] != '.') {
       std::string path = dir+"/"+dirp->d_name;
-      std::cerr << "  == " << path << std::endl;
+      std::cerr << "  == " << ++cnt << "#" << path << std::endl;
       tr.train_file(path.c_str(), is_ham);
     }
   std::cerr << std::endl;
@@ -116,6 +116,7 @@ int main(int argc, char** argv) {
 
   // output 
   tr.output_model();
-    
+  
+  std::cerr << "DONE" << std::endl;
   return 0;
 }

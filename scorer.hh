@@ -6,8 +6,6 @@
 #include <cmath>
 #include <algorithm>
 
-
-
 namespace HAM {
   class Scorer {
     typedef std::tr1::unordered_set<unsigned> FeatureIdSet;

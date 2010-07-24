@@ -12,13 +12,10 @@ namespace HAM {
     class Builder {
     public:
       struct Key {
-	// TODO: 値の計算は外で行う
-	Key(const char* text, unsigned ham_count, unsigned spam_count, 
-	    unsigned total_ham_count, unsigned total_spam_count) 
-	  : buf(text), cs(buf.c_str()), 
-	    probability(bayesian_spam_probability(ham_count,spam_count,total_ham_count,total_spam_count)*10000000) {}
+	Key(const char* text, double probability)
+	  : buf(text), cs(buf.c_str()), probability(probability*10000000) {}
 	bool operator<(const Key& k) const { return strcmp(rest(), k. rest()) < 0; }
-
+	
 	unsigned char read() { return cs.read(); }     
 	unsigned char prev() const { return cs.prev(); }
 	unsigned char peek() const { return cs.peek(); } 
@@ -28,25 +25,31 @@ namespace HAM {
 	std::string buf;
 	CharStream cs;
 	unsigned probability;
+      };
+      typedef std::vector<Key> KeyList;
+      
+      struct ProbabilityCalculator {
+	ProbabilityCalculator(unsigned total_ham_count, unsigned total_spam_count) 
+	  : total_ham_count(total_ham_count), total_spam_count(total_spam_count) {}
+	
+	double bayesian_spam_probability (unsigned ham_count, unsigned spam_count) const {
+	  double assumed_probability = 0.5;
+	  double weight = 1.0;
+	  double basic_probability = spam_probability(ham_count, spam_count);
+	  double data_points = ham_count+spam_count;
+	  return (weight*assumed_probability + data_points*basic_probability) / (weight+data_points);
+	} 
 
-	double spam_probability(unsigned ham_count, unsigned spam_count,
-				unsigned total_ham_count, unsigned total_spam_count) const {
+	double spam_probability(unsigned ham_count, unsigned spam_count) const {
 	  double spam_freq = (double)spam_count/(double)total_spam_count;
 	  double ham_freq = (double)ham_count/(double)total_ham_count;
 	  return spam_freq/(spam_freq+ham_freq);
 	}
-	
-	double bayesian_spam_probability (unsigned ham_count, unsigned spam_count, 
-					  unsigned total_ham_count, unsigned total_spam_count) const {
-	  double assumed_probability = 0.5;
-	  double weight = 1.0;
-	  double basic_probability = spam_probability(ham_count, spam_count, total_ham_count, total_spam_count);
-	  double data_points = ham_count+spam_count;
-	  return (weight*assumed_probability + data_points*basic_probability) / (weight+data_points);
-	} 
-      };
-      typedef std::vector<Key> KeyList;
 
+	const unsigned total_ham_count;
+	const unsigned total_spam_count;
+      };
+      
     public:
       Builder(KeyList& keys)
 	: keys(keys), node_size(count_node(keys)*1.5), alloc(node_size) {
