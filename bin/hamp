@@ -77,6 +77,9 @@ puts "                           "
 puts "#{ham[:correct].to_i} files guessed to be HAM in '#{HamDir}' (total #{count[:ham].to_i} files)"
 puts "#{(count[:spam]-ham[:wrong]).to_i} files guessed to be SPAM in '#{SpamDir}' (total #{count[:spam].to_i} files)"
 puts ""
-puts "precision: %s" % [(ham[:correct]/count[:ham]) / (ham[:correct]/count[:ham]+ham[:wrong]/count[:spam])]
-puts "recall   : %s" % [ham[:correct]/count[:ham]]
+precision= (ham[:correct]/count[:ham]) / (ham[:correct]/count[:ham]+ham[:wrong]/count[:spam])
+recall   = ham[:correct]/count[:ham]
+puts "precision: #{precision}"
+puts "recall   : #{recall}"
+puts "f-measure: #{2.0/(1.0/recall+1.0/precision)}"
 puts ""
