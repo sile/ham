@@ -77,7 +77,7 @@ puts "                           "
 puts "In '#{HamDir}', #{ham[:correct].to_i} files were classified as HAM (total #{count[:ham].to_i} files)"
 puts "In '#{SpamDir}', #{(count[:spam]-ham[:wrong]).to_i} files were classified as SPAM (total #{count[:spam].to_i} files)"
 puts ""
-precision= (ham[:correct]/count[:ham]) / (ham[:correct]/count[:ham]+ham[:wrong]/count[:spam])
+precision= ham[:correct] / (ham[:correct]+ham[:wrong])
 recall   = ham[:correct]/count[:ham]
 puts "precision: #{precision}"
 puts "recall   : #{recall}"
