@@ -74,8 +74,8 @@ Dir.glob("#{SpamDir}/*").each do |path|
 end
 
 puts "                           "
-puts "In '#{HamDir}', #{ham[:correct].to_i} files guessed to be HAM (total #{count[:ham].to_i} files)"
-puts "In '#{SpamDir}', #{(count[:spam]-ham[:wrong]).to_i} files guessed to be SPAM (total #{count[:spam].to_i} files)"
+puts "In '#{HamDir}', #{ham[:correct].to_i} files were classified as HAM (total #{count[:ham].to_i} files)"
+puts "In '#{SpamDir}', #{(count[:spam]-ham[:wrong]).to_i} files were classified as SPAM (total #{count[:spam].to_i} files)"
 puts ""
 precision= (ham[:correct]/count[:ham]) / (ham[:correct]/count[:ham]+ham[:wrong]/count[:spam])
 recall   = ham[:correct]/count[:ham]
