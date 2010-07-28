@@ -3,6 +3,7 @@
 #include <string>
 #include <tr1/unordered_map>
 #include <cstdlib>
+#include <cstring>
 #include <sys/types.h>
 #include <dirent.h>
 #include "tokenizer/ngram.hh"
@@ -53,6 +54,28 @@ public:
       ngram.each_token(line.c_str(), fn);
   }
   
+  bool train_mbox_file(std::string filepath, bool is_ham) {
+    std::ifstream in(filepath.c_str());
+    if(!in) 
+      return false;
+    
+    std::string line;
+    while(std::getline(in,line)) {
+      unsigned offset=0;
+      if(line.empty())
+	continue;
+      if(strncmp("From ", line.c_str(), strlen("From "))==0) {
+	doc_id++;
+	total.inc(is_ham, doc_id);
+	offset = strlen("From ");
+      }
+
+      Callback fn(tc, is_ham, doc_id);
+      ngram.each_token(line.c_str()+offset, fn);
+    }
+    return true;
+  }
+  
   void output_model() const {
     // first line
     printf("%08x %08x %s\n", total.ham_count, total.spam_count, "==TOTAL==");
@@ -93,27 +116,56 @@ bool train_files(Train& tr, const std::string& dir, bool is_ham) {
 }
 
 int main(int argc, char** argv) {
-  if(argc != 4) {
-    std::cerr << "Usage: hamt <learn-dir> <ngram-min> <ngram-max>" << std::endl;
+  if(argc != 4 && argc != 5) {
+  ARG_ERROR:
+    std::cerr << "Usage: hamt [--mbox] <learn-dir> <ngram-min> <ngram-max>" << std::endl;
     return 1;
   }
+
+  // parse arguments
+  int arg_i = 1;
+  bool is_mbox = false;
+  
+  if(strcmp(argv[arg_i],"--mbox")==0) {
+    is_mbox = true;
+    arg_i++;
+  }
+  if(argc-arg_i != 3)
+    goto ARG_ERROR;  
 
   // init
-  const char* rootdir = argv[1];
-  Train tr(atoi(argv[2]), atoi(argv[3]));
+  std::string rootdir = argv[arg_i];
+  Train tr(atoi(argv[arg_i+1]), atoi(argv[arg_i+2]));
+
+  // train
+  if(is_mbox) {
+    // ## mbox formatted text
+    // ham
+    if(tr.train_mbox_file(rootdir+"/ham.mbx",true)==false) {
+      std::cerr << "Can't open file: " << rootdir+"/ham.mbx" << std::endl;
+      return 1;
+    }
+    
+    // spam
+    if(tr.train_mbox_file(rootdir+"/spam.mbx",false)==false) {
+      std::cerr << "Can't open file: " << rootdir+"/spam.mbx" << std::endl;
+      return 1;
+    }
+  } else {
+    // ## plane text
+    // ham
+    if(train_files(tr, rootdir+"/ham",true)==false) {
+      std::cerr << "Can't open directory: " << rootdir+"/ham" << std::endl;
+      return 1;
+    }
+    
+    // spam
+    if(train_files(tr, rootdir+"/spam",false)==false) {
+      std::cerr << "Can't open directory: " << rootdir+"/spam" << std::endl;
+      return 1;
+    }
+  } 
   
-  // train ham
-  if(train_files(tr, std::string(rootdir)+"/ham",true)==false) {
-    std::cerr << "Can't open directory: " << std::string(rootdir)+"/ham" << std::endl;
-    return 1;
-  }
-
-  // train spam
-  if(train_files(tr, std::string(rootdir)+"/spam",false)==false) {
-    std::cerr << "Can't open directory: " << std::string(rootdir)+"/spam" << std::endl;
-    return 1;
-  }
-
   // output 
   tr.output_model();
   

@@ -1,17 +1,23 @@
 #! /usr/bin/env ruby
 
 if ARGV.size != 2 && ARGV.size != 3
-  STDERR.puts "Usage: hamp [--min-spam-score=0.5] <model-index> <test-data-dir>"
+  STDERR.puts "Usage: hamp [--mbox] [--min-spam-score=0.5] <model-index> <test-data-dir>"
   exit 1
 end
 
 ##
-if ARGV[0] =~ /^--min-spam-score=/
-  MinSpamScore = ARGV[0].sub(/^--min-spam-score=/,'').to_f
-  ARGV.shift
-else 
-  MinSpamScore = 0.5
-end
+2.times{|i|
+  if ARGV[i] =~ /^--min-spam-score=/
+    MinSpamScore = ARGV[0].sub(/^--min-spam-score=/,'').to_f
+    ARGV.shift
+  elsif ARGV[i] =~ /^--mbox$/
+    IS_MBOX = true
+    ARGV.shift
+  else 
+    IS_MBOX = false unless defined? IS_MBOX
+    MinSpamScore = 0.5
+  end
+}
 
 ModelIndexPath = ARGV[0]
 TestDataDir    = ARGV[1]
@@ -24,14 +30,26 @@ unless FileTest.directory?(TestDataDir)
   exit 1
 end
 
-unless FileTest.directory?(HamDir)
-  STDERR.puts "No such directory: #{HamDir}"
+if IS_MBOX
+  unless FileTest.file?("#{TestDataDir}/ham.mbx")
+    STDERR.puts "No such directory: #{TestDataDir}/ham.mbx"
   exit 1
-end
+  end
 
-unless FileTest.directory?(SpamDir)
-  STDERR.puts "No such directory: #{SpamDir}"
+  unless FileTest.file?("#{TestDataDir}/spam.mbx")
+    STDERR.puts "No such directory: #{TestDataDir}/spam.mbx"
   exit 1
+  end
+else
+  unless FileTest.directory?(HamDir)
+    STDERR.puts "No such directory: #{HamDir}"
+  exit 1
+  end
+  
+  unless FileTest.directory?(SpamDir)
+    STDERR.puts "No such directory: #{SpamDir}"
+    exit 1
+  end
 end
 
 ##
@@ -40,7 +58,11 @@ ham   = {:correct => 0.0, :wrong => 0.0}
 
 def ham?(path)
   IO.popen("#{File.dirname __FILE__}/ham --min-spam-score=#{MinSpamScore} #{ModelIndexPath}", "r+"){|io|
-    open(path){|f| io.write(f.read) }
+    if path.class == String
+      io.write(path)
+    else
+      open(path){|f| io.write(f.read) }
+    end
     io.close_write
 
     ret = io.gets
@@ -56,21 +78,44 @@ rescue => ex
 end
 
 ## 
-count[:ham] = Dir.glob("#{HamDir}/*").size.to_f
-count[:spam] = Dir.glob("#{SpamDir}/*").size.to_f
+count = {:ham => 0, :spam => 0}
+if IS_MBOX
+  def msg_count(file)
+    cnt=0; open(file).each{|l| cnt+=1 if l =~ /^From /}; cnt
+  end
+  count[:ham] = msg_count("#{TestDataDir}/ham.mbx")
+  count[:spam] = msg_count("#{TestDataDir}/spam.mbx")
+else
+  count[:ham] = Dir.glob("#{HamDir}/*").size.to_f
+  count[:spam] = Dir.glob("#{SpamDir}/*").size.to_f
+end
 cnt = 0
 total = count[:ham].to_i+count[:spam].to_i
 
-## HAM
-Dir.glob("#{HamDir}/*").each do |path|
-  STDERR.write "# #{cnt+=1}/#{total}\r"
-  ham[:correct] += 1.0 if ham?(path)
-end
-
-## SPAM
-Dir.glob("#{SpamDir}/*").each do |path|
-  STDERR.write "# #{cnt+=1}/#{total}\r"
-  ham[:wrong] += 1.0 if ham?(path)
+if IS_MBOX
+  ## HAM
+  open("#{TestDataDir}/ham.mbx").read.split(/^From |\nFrom /).each do |msg|
+    STDERR.write "# #{cnt+=1}/#{total}\r"
+    ham[:correct] += 1.0 if ham?(msg)
+  end
+  
+  ## SPAM
+  open("#{TestDataDir}/spam.mbx").read.split(/^From |\nFrom /).each do |msg|
+    STDERR.write "# #{cnt+=1}/#{total}\r"
+    ham[:wrong] += 1.0 if ham?(msg)
+  end
+else
+  ## HAM
+  Dir.glob("#{HamDir}/*").each do |path|
+    STDERR.write "# #{cnt+=1}/#{total}\r"
+    ham[:correct] += 1.0 if ham?(path)
+  end
+  
+  ## SPAM
+  Dir.glob("#{SpamDir}/*").each do |path|
+    STDERR.write "# #{cnt+=1}/#{total}\r"
+    ham[:wrong] += 1.0 if ham?(path)
+  end
 end
 
 puts "                           "

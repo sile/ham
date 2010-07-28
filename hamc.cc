@@ -12,22 +12,34 @@ unsigned parse_hex(const char* s) {
 }
 
 #define OPT1 "--lower-frequency-limit="
+#define OPT2 "--omit-redundant-feature"
 
 int main(int argc, char** argv) {
-  if(argc != 2 && argc != 3) {
+  if(argc < 2 || argc > 4) {
   ARG_ERROR:
-    std::cerr << "Usage: hamc [--lower-frequency-limit=2] <model-index>" << std::endl;
+    std::cerr << "Usage: hamc [--lower-frequency-limit=2] [--omit-redundant-feature] <model-index>" << std::endl;
     return 1;
   }
   
   // parse arguments
   unsigned lower_frequency_limit=2;
+  bool omit_redundant_feature=false;
   int arg_i=1;
-  if(strncmp(argv[arg_i], OPT1, strlen(OPT1))==0)
-    lower_frequency_limit = atoi(argv[arg_i++]+strlen(OPT1));
+  for(; arg_i < argc; arg_i++) {
+    if(strncmp(argv[arg_i], "--", 2) != 0)
+      break;
+    
+    if(strncmp(argv[arg_i], OPT1, strlen(OPT1))==0)
+      lower_frequency_limit = atoi(argv[arg_i]+strlen(OPT1));
+    
+    else if(strcmp(argv[arg_i], OPT2)==0)
+      omit_redundant_feature = true;
 
-  if(arg_i == argc)
-    goto ARG_ERROR;  // too few arguments
+    else
+      goto ARG_ERROR; // unknown option
+  }
+  if(argc-arg_i != 1)
+    goto ARG_ERROR;  
 
   const char* index_filepath=argv[arg_i];
   
@@ -63,11 +75,10 @@ int main(int argc, char** argv) {
   std::sort(keys.begin(), keys.end());
 
   // omit redundant features
-  if(keys.empty()==false) {
+  if(keys.empty()==false && omit_redundant_feature) {
     std::reverse(keys.begin(), keys.end());
     std::size_t tail = keys.size();
     for(std::size_t i=keys.size()-1; i > 0; i--)
-      // TODO: comment
       if(keys[i].probability == keys[i-1].probability && 
 	 strncmp(keys[i].rest(), keys[i-1].rest(), strlen(keys[i].rest()))==0)
 	std::swap(keys[--tail], keys[i]);
