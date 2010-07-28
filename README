@@ -28,7 +28,11 @@ $ make
     - フォーマット:
       -- 一行目(データ数)　: <hamファイル数> <spamファイル数> ==TOTAL==
       -- 残りの行(素性定義): <素性のhamファイルでの出現数> <素性のspamファイルでの出現数> <素性文字列>
-$ bin/hamt <learn-dir> <ngram-min> <ngram-max>
+$ bin/hamt [--octet] [--mbox] <learn-dir> <ngram-min> <ngram-max>
+--octet   := 指定されている場合は、バイトNグラムを用いる
+             指定されていない場合は、文字コードをUTF-8と仮定し、文字Nグラムを用いる
+--mbox    := 学習データをmbox形式として扱う
+             学習データのファイル名は、それぞれ ${learn-dir}/ham.mbx 及び ${learn-dir}/spam.mbx
 learn-dir := 学習用ディレクトリ
              このディレクトリは'ham'と'spam'という名前のディレクトリを有する必要がある
                - ham : hamデータ(正解データ)ファイルが配置されているディレクトリ
@@ -43,6 +47,10 @@ $ bin/hamc [--lower-frequency-limit=2] <model-index>
 --lower-frequency-limit := 使用する素性のフィルタ値
                            出現頻度が低い素性はノイズとして除去する
                            デフォルトは2
+--omit-redundant-feature := 冗長な素性を除去してコンパイルを行う
+                              - 冗長: 素性A、Bの出現頻度が全く同じで、A(の素性文字列)がBを包含している場合、Bは冗長
+                              - インデックスファイルが多少小さくなるが、分類性能も多少悪くなる傾向がある
+                            試験的に導入中
 model-index := 生成されるコンパイル済みファイル
 
 
@@ -61,7 +69,9 @@ model-index := bin/hamcが生成したファイル
 == bin/hamp:
     - 分類結果検証用コマンド
     - 実際にはRubyスクリプト
-$ bin/hamp [--min-spam-score=0.5] <model-index> <test-data-dir>
+$ bin/hamp [--mbox] [--min-spam-score=0.5] <model-index> <test-data-dir>
+--mbox := mbox形式のテストデータを用いる
+          テストデータのファイル名は、それぞれ ${test-data-dir}/ham.mbx 及び ${test-data-dir}/spam.mbx
 --min-spam-score := spamとして分類されるスコアの下限
                     デフォルトは0.5
 model-index   := bin/hamcが生成したファイル
