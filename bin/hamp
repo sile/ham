@@ -13,11 +13,11 @@ end
   elsif ARGV[i] =~ /^--mbox$/
     IS_MBOX = true
     ARGV.shift
-  else 
-    IS_MBOX = false unless defined? IS_MBOX
-    MinSpamScore = 0.5
   end
 }
+
+IS_MBOX = false unless defined? IS_MBOX
+MinSpamScore = 0.5 unless defined? MinSpamScore
 
 ModelIndexPath = ARGV[0]
 TestDataDir    = ARGV[1]
