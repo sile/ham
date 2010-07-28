@@ -1,7 +1,9 @@
 CXX=g++
 CXX_FLAGS=-O2 -Wall
 
-all: bin bin/hamt bin/hamc bin/ham
+COMMANDS=bin/hamt bin/hamc bin/ham
+
+all: bin ${COMMANDS}
 
 bin:
 	mkdir bin
@@ -19,4 +21,4 @@ install:
 	cp bin/* /usr/local/bin/
 
 clean:
-	rm -f bin/ham{,t,c}
+	rm -f ${COMMANDS}
