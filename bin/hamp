@@ -56,16 +56,17 @@ end
 count = {:ham => 0.0, :spam => 0.0}
 ham   = {:correct => 0.0, :wrong => 0.0}
 
-def ham?(path)
+def ham?(path,is_path=true)
   IO.popen("#{File.dirname __FILE__}/ham --min-spam-score=#{MinSpamScore} #{ModelIndexPath}", "r+"){|io|
-    if path.class == String
-      io.write(path)
-    else
+    if is_path
       open(path){|f| io.write(f.read) }
+    else
+      io.write(path)
     end
     io.close_write
 
     ret = io.gets
+
     if ret.empty?
       STDERR.puts "Can't open file: #{ModelIndexPath}"
       exit 1
@@ -96,13 +97,13 @@ if IS_MBOX
   ## HAM
   open("#{TestDataDir}/ham.mbx").read.split(/^From |\nFrom /).each do |msg|
     STDERR.write "# #{cnt+=1}/#{total}\r"
-    ham[:correct] += 1.0 if ham?(msg)
+    ham[:correct] += 1.0 if ham?(msg,false)
   end
   
   ## SPAM
   open("#{TestDataDir}/spam.mbx").read.split(/^From |\nFrom /).each do |msg|
     STDERR.write "# #{cnt+=1}/#{total}\r"
-    ham[:wrong] += 1.0 if ham?(msg)
+    ham[:wrong] += 1.0 if ham?(msg,false)
   end
 else
   ## HAM
