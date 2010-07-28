@@ -69,7 +69,7 @@ int main(int argc, char** argv) {
     
     bool all     = total_ham_count==ham_count && total_spam_count==spam_count;
     bool too_few = ham_count+spam_count < lower_frequency_limit;
-    if(!too_few) //!(all || too_few))
+    if(!(all || too_few))
       keys.push_back(Builder::Key(s+18, pc.bayesian_spam_probability(ham_count, spam_count)));
   }
   std::sort(keys.begin(), keys.end());
