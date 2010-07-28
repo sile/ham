@@ -54,10 +54,26 @@ int main(int argc, char** argv) {
     const char* s = line.c_str();
     unsigned ham_count  = parse_hex(s);
     unsigned spam_count = parse_hex(s+9);
-    if(ham_count + spam_count >= lower_frequency_limit)
+    
+    bool all     = total_ham_count==ham_count && total_spam_count==spam_count;
+    bool too_few = ham_count+spam_count < lower_frequency_limit;
+    if(!(all || too_few))
       keys.push_back(Builder::Key(s+18, pc.bayesian_spam_probability(ham_count, spam_count)));
   }
   std::sort(keys.begin(), keys.end());
+
+  // omit redundant features
+  if(keys.empty()==false) {
+    std::reverse(keys.begin(), keys.end());
+    std::size_t tail = keys.size();
+    for(std::size_t i=keys.size()-1; i > 0; i--)
+      // TODO: comment
+      if(keys[i].probability == keys[i-1].probability && 
+	 strncmp(keys[i].rest(), keys[i-1].rest(), strlen(keys[i].rest()))==0)
+	std::swap(keys[--tail], keys[i]);
+    keys.erase(keys.begin()+tail, keys.end());
+    std::sort(keys.begin(), keys.end());
+  }
   
   // convert to trie format and save
   HAM::Trie::Builder bld(keys);
