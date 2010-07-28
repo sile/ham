@@ -19,4 +19,4 @@ install:
 	cp bin/* /usr/local/bin/
 
 clean:
-	rm -f bin/*
+	rm -f bin/ham{,t,c}
