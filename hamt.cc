@@ -36,8 +36,8 @@ class Train {
   };
   
 public:
-  Train(unsigned ngram_min, unsigned ngram_max) 
-    : ngram(ngram_min, ngram_max), doc_id(0) {}
+  Train(unsigned ngram_min, unsigned ngram_max, HAM::Tokenizer::Ngram::Unit token_unit) 
+    : ngram(ngram_min, ngram_max, token_unit), doc_id(0) {}
   
   void train_file(const char* filepath, bool is_ham) {
     std::ifstream in(filepath);
@@ -116,26 +116,34 @@ bool train_files(Train& tr, const std::string& dir, bool is_ham) {
 }
 
 int main(int argc, char** argv) {
-  if(argc != 4 && argc != 5) {
+  if(argc < 4 || argc > 6) {
   ARG_ERROR:
-    std::cerr << "Usage: hamt [--mbox] <learn-dir> <ngram-min> <ngram-max>" << std::endl;
+    std::cerr << "Usage: hamt [--octet] [--mbox] <learn-dir> <ngram-min> <ngram-max>" << std::endl;
     return 1;
   }
 
   // parse arguments
   int arg_i = 1;
   bool is_mbox = false;
+  HAM::Tokenizer::Ngram::Unit token_unit = HAM::Tokenizer::Ngram::UNIT_UTF8;
   
-  if(strcmp(argv[arg_i],"--mbox")==0) {
-    is_mbox = true;
-    arg_i++;
+  for(; arg_i < argc; arg_i++) {
+    if(strncmp(argv[arg_i], "--", 2) != 0)
+      break;
+
+    if(strcmp(argv[arg_i],"--mbox")==0)
+      is_mbox = true;
+    else if (strcmp(argv[arg_i],"--octet")==0)
+      token_unit = HAM::Tokenizer::Ngram::UNIT_OCTET;
+    else
+      goto ARG_ERROR;
   }
   if(argc-arg_i != 3)
     goto ARG_ERROR;  
 
   // init
   std::string rootdir = argv[arg_i];
-  Train tr(atoi(argv[arg_i+1]), atoi(argv[arg_i+2]));
+  Train tr(atoi(argv[arg_i+1]), atoi(argv[arg_i+2]), token_unit);
 
   // train
   if(is_mbox) {
