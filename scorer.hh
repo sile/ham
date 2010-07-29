@@ -16,6 +16,7 @@ namespace HAM {
       : fe(fe), ham_acc_prob(0.0), spam_acc_prob(0.0) {}
     
     void add_text(const char* text) {
+      fe.reset();
       for(; *text != '\0'; text++)
 	fe.each_feature(text, *this);
     }

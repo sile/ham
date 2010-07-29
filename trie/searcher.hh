@@ -8,7 +8,7 @@ namespace HAM {
   namespace Trie {
     class Searcher {
     public:
-      Searcher(const char* filepath) : mm(filepath) {
+      Searcher(const char* filepath) : mm(filepath), prev_tail(NULL) {
 	if(mm) {
 	  const unsigned* up = reinterpret_cast<const unsigned*>(mm.ptr);
 	  
@@ -44,6 +44,10 @@ namespace HAM {
 	}    
       }
 
+      void reset() const {
+	prev_tail=NULL;
+      }
+
       template<class Callback>
       void longest_common_prefix(const char* key, Callback& fn) const {
 	unsigned last_matched_index=0;
@@ -66,15 +70,18 @@ namespace HAM {
 	  else
 	    break;
 	}  	
-	if(last_matched_offset > 0)
+	if(last_matched_offset > 0 && (!prev_tail || key+last_matched_offset > prev_tail)) {
+	  prev_tail = key+last_matched_offset;
 	  fn(key, last_matched_offset, last_matched_index, 
 	     base[last_matched_index]/10000000.0);
+	}
       }
     private:
       Util::mmap_t mm;
       unsigned node_size;
       const unsigned *base;
       const unsigned char *chck;
+      mutable const char* prev_tail;
     };
   }
 }

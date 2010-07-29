@@ -19,6 +19,11 @@ namespace HAM {
 	srch.each_common_prefix(text, fn);
     }
 
+    // TODO: description
+    void reset() const { 
+      srch.reset();
+    }
+
     private:
     Trie::Searcher srch;
     const bool longest_match_only;
