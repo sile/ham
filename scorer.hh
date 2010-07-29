@@ -12,7 +12,7 @@ namespace HAM {
     friend class Trie::Searcher;
     
   public:
-    Scorer(const FeatureExtractor& fe) 
+    Scorer(const FeatureExtractor& fe)
       : fe(fe), ham_acc_prob(0.0), spam_acc_prob(0.0) {}
     
     void add_text(const char* text) {
@@ -31,7 +31,7 @@ namespace HAM {
       if(used.find(feature_id) != used.end())
 	return;
       used.insert(feature_id);
-
+      
       ham_acc_prob  += log(1.0 - spam_probability);
       spam_acc_prob += log(spam_probability);
     }

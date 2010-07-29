@@ -6,18 +6,22 @@
 namespace HAM {
   class FeatureExtractor {
   public:
-    FeatureExtractor(const char* model_index_path) 
-      : srch(model_index_path) {}
+    FeatureExtractor(const char* model_index_path, bool lmo=false) 
+      : srch(model_index_path), longest_match_only(lmo) {}
 
     operator bool() const { return srch; }
 
     template <class Callback>
     void each_feature(const char* text, Callback& fn) const {
-      srch.each_common_prefix(text, fn);
+      if(longest_match_only)
+	srch.longest_common_prefix(text, fn);
+      else
+	srch.each_common_prefix(text, fn);
     }
 
     private:
     Trie::Searcher srch;
+    const bool longest_match_only;
   };
 }
 

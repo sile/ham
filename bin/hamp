@@ -1,23 +1,29 @@
 #! /usr/bin/env ruby
 
-if ARGV.size != 2 && ARGV.size != 3
-  STDERR.puts "Usage: hamp [--mbox] [--min-spam-score=0.5] <model-index> <test-data-dir>"
+if ARGV.size < 2 || ARGV.size > 4
+  STDERR.puts "Usage: hamp [--mbox] [--longest-match] [--min-spam-score=0.5] <model-index> <test-data-dir>"
   exit 1
 end
 
 ##
-2.times{|i|
-  if ARGV[i] =~ /^--min-spam-score=/
+3.times{|i|
+  if ARGV[0] =~ /^--min-spam-score=/
     MinSpamScore = ARGV[0].sub(/^--min-spam-score=/,'').to_f
     ARGV.shift
-  elsif ARGV[i] =~ /^--mbox$/
+  elsif ARGV[0] =~ /^--mbox$/
     IS_MBOX = true
     ARGV.shift
+  elsif ARGV[0] =~ /^--longest-match$/
+    LONGEST_MATCH_ONLY = true
+    ARGV.shift
+  else
+    break
   end
 }
 
 IS_MBOX = false unless defined? IS_MBOX
 MinSpamScore = 0.5 unless defined? MinSpamScore
+LONGEST_MATCH_ONLY = false unless defined? LONGEST_MATCH_ONLY
 
 ModelIndexPath = ARGV[0]
 TestDataDir    = ARGV[1]
@@ -56,8 +62,9 @@ end
 count = {:ham => 0.0, :spam => 0.0}
 ham   = {:correct => 0.0, :wrong => 0.0}
 
+HAM_CMD = "#{File.dirname __FILE__}/ham #{LONGEST_MATCH_ONLY ? '--longest-match':''} --min-spam-score=#{MinSpamScore} #{ModelIndexPath}"
 def ham?(path,is_path=true)
-  IO.popen("#{File.dirname __FILE__}/ham --min-spam-score=#{MinSpamScore} #{ModelIndexPath}", "r+"){|io|
+  IO.popen(HAM_CMD, "r+"){|io|
     if is_path
       open(path){|f| io.write(f.read) }
     else
